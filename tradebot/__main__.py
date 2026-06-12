@@ -42,6 +42,13 @@ def main(argv: list[str] | None = None) -> int:
                         help="single poll cycle (for cron), then exit")
     sub.add_parser("rotator-status", help="show rotator paper state")
 
+    p_meme = sub.add_parser("meme-run",
+                            help="run the memecoin paper EXPERIMENT (measurement, "
+                                 "not a profit machine)")
+    p_meme.add_argument("--once", action="store_true",
+                        help="single poll cycle, then exit")
+    sub.add_parser("meme-status", help="show meme experiment results")
+
     p_reset = sub.add_parser("reset", help="wipe paper account state")
     p_reset.add_argument("--confirm", action="store_true")
 
@@ -102,6 +109,24 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "rotator-status":
         from .rotator import RotatorRunner
         print(RotatorRunner(cfg).status())
+        return 0
+
+    if args.command == "meme-run":
+        from .memebot import MemeBot
+        print(DISCLAIMER)
+        print("MEMECOIN EXPERIMENT: paper results OVERSTATE live returns —\n"
+              "honeypots, failed exits and sandwich attacks are not simulated.\n")
+        bot = MemeBot(cfg)
+        if args.once:
+            bot.check_once()
+            print(bot.status())
+        else:
+            bot.run_forever()
+        return 0
+
+    if args.command == "meme-status":
+        from .memebot import MemeBot
+        print(MemeBot(cfg).status())
         return 0
 
     if args.command == "reset":

@@ -20,5 +20,18 @@
   "rotator_cash": 400.0,
   "staking_apy": 0.065,
   "stable_apy": 0.05,
-  "rotation_cost": 0.0025
+  "rotation_cost": 0.0025,
+  "meme_cash": 400.0,
+  "meme_max_positions": 5,
+  "meme_min_liquidity_usd": 100000.0,
+  "meme_min_volume24h_usd": 250000.0,
+  "meme_min_age_hours": 24.0,
+  "meme_entry_change_h1": 5.0,
+  "meme_stop_loss": 0.15,
+  "meme_trail": 0.25,
+  "meme_max_hold_hours": 48.0,
+  "meme_rug_liquidity_drop": 0.7,
+  "meme_cost_per_side": 0.01,
+  "meme_cooldown_hours": 24.0,
+  "meme_poll_seconds": 120
 }

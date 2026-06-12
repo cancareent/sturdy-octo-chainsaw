@@ -50,6 +50,23 @@ class Config:
     # 25 bps per rotation is deliberately conservative.
     rotation_cost: float = 0.0025
 
+    # Memecoin paper experiment. Costs are deliberately pessimistic, but
+    # paper results still OVERSTATE live returns (honeypots, failed exits
+    # and sandwiching cannot be simulated).
+    meme_cash: float = 400.0
+    meme_max_positions: int = 5
+    meme_min_liquidity_usd: float = 100_000.0
+    meme_min_volume24h_usd: float = 250_000.0
+    meme_min_age_hours: float = 24.0   # skip the sniper-dominated launch window
+    meme_entry_change_h1: float = 5.0  # percent 1h momentum required to enter
+    meme_stop_loss: float = 0.15
+    meme_trail: float = 0.25
+    meme_max_hold_hours: float = 48.0
+    meme_rug_liquidity_drop: float = 0.7  # liquidity falls this much => rugged
+    meme_cost_per_side: float = 0.01      # pool fee + price impact + tx fees
+    meme_cooldown_hours: float = 24.0
+    meme_poll_seconds: int = 120
+
     def validate(self) -> None:
         if self.granularity not in VALID_GRANULARITIES:
             raise ValueError(f"granularity must be one of {sorted(VALID_GRANULARITIES)}")
@@ -77,6 +94,14 @@ class Config:
             raise ValueError("yield assumptions must be in [0, 0.5)")
         if not (0 <= self.rotation_cost < 0.05):
             raise ValueError("rotation_cost must be in [0, 0.05)")
+        if self.meme_cash <= 0 or self.meme_max_positions < 1:
+            raise ValueError("meme_cash must be positive, meme_max_positions >= 1")
+        if not (0 < self.meme_stop_loss < 1 and 0 < self.meme_trail < 1):
+            raise ValueError("meme_stop_loss and meme_trail must be in (0, 1)")
+        if not (0 < self.meme_rug_liquidity_drop < 1):
+            raise ValueError("meme_rug_liquidity_drop must be in (0, 1)")
+        if not (0 <= self.meme_cost_per_side < 0.1):
+            raise ValueError("meme_cost_per_side must be in [0, 0.1)")
 
     @classmethod
     def load(cls, path: str | Path = "config.json") -> "Config":

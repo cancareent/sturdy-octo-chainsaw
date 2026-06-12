@@ -99,6 +99,31 @@ python3 -m tradebot rotator-run               # paper-trade it live
 python3 -m tradebot rotator-status            # check state any time
 ```
 
+## The memecoin experiment (`meme-*` commands)
+
+A measurement instrument, not a profit machine. It paper-trades trending
+Solana memecoins (GeckoTerminal data) with a disciplined momentum system —
+liquidity/volume/age filters, 1h-momentum entries, stop-loss, trailing
+stop, time stop, and a rug detector that marks positions to zero when pool
+liquidity collapses — using 1% per-side costs.
+
+**Interpretation rule, agreed in advance:** paper results OVERSTATE live
+memecoin returns, because honeypots (tokens you can never sell), failed
+exits during rugs, and sandwich attacks cannot be simulated. If this loses
+on paper, the live version loses more. If it wins on paper, that is
+necessary but not sufficient evidence. Context: CoinGecko wallet data
+shows fewer than half of pump.fun traders were profitable in most of
+2024–2025 (bottom: 30% in June 2025), and most winners in the best months
+made under $500.
+
+```bash
+python3 -m tradebot meme-run        # run the experiment (poll every 2 min)
+python3 -m tradebot meme-status     # equity, win rate, rug count, costs
+```
+
+State and a full trade log persist in `state/meme_state.json` and
+`state/meme_trades.csv`.
+
 ## How it works
 
 - **Strategy** (`tradebot/strategy.py`): enter long when the 20-day EMA
