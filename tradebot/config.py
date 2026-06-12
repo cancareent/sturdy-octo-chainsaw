@@ -38,6 +38,18 @@ class Config:
     poll_seconds: int = 900
     state_dir: str = "state"
 
+    # Staked trend rotator: hold staked SOL in uptrends, yield-bearing
+    # stables in downtrends. Yields are conservative net-of-fee estimates
+    # (research 2026-06: JitoSOL ~5.4-7% APY, Kamino USDC ~4-7%).
+    rotator_product: str = "SOL-USD"
+    rotator_cash: float = 400.0
+    staking_apy: float = 0.065
+    stable_apy: float = 0.05
+    # One-way cost of rotating between staked SOL and USDC (DEX swap fee +
+    # slippage + tx fees). Jupiter round trips on SOL measured ~0-5 bps;
+    # 25 bps per rotation is deliberately conservative.
+    rotation_cost: float = 0.0025
+
     def validate(self) -> None:
         if self.granularity not in VALID_GRANULARITIES:
             raise ValueError(f"granularity must be one of {sorted(VALID_GRANULARITIES)}")
@@ -59,6 +71,12 @@ class Config:
             raise ValueError("max_alloc_per_product must be in (0, 1]")
         if not self.products:
             raise ValueError("products must not be empty")
+        if self.rotator_cash <= 0:
+            raise ValueError("rotator_cash must be positive")
+        if not (0 <= self.staking_apy < 0.5 and 0 <= self.stable_apy < 0.5):
+            raise ValueError("yield assumptions must be in [0, 0.5)")
+        if not (0 <= self.rotation_cost < 0.05):
+            raise ValueError("rotation_cost must be in [0, 0.05)")
 
     @classmethod
     def load(cls, path: str | Path = "config.json") -> "Config":

@@ -15,5 +15,10 @@
   "max_alloc_per_product": 0.45,
   "max_drawdown_halt": 0.25,
   "poll_seconds": 900,
-  "state_dir": "state"
+  "state_dir": "state",
+  "rotator_product": "SOL-USD",
+  "rotator_cash": 400.0,
+  "staking_apy": 0.065,
+  "stable_apy": 0.05,
+  "rotation_cost": 0.0025
 }

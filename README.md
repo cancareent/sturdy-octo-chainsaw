@@ -71,6 +71,34 @@ touch state/STOP
 python3 -m tradebot reset --confirm
 ```
 
+## The Staked Trend Rotator (`rotator-*` commands)
+
+The second strategy in this repo, built for a small SOL holding: capital is
+**always earning yield** — staked SOL (~6.5% APY, in SOL terms) during
+uptrends, yield-bearing USDC (~5% APY) during downtrends — and the trend
+engine (same EMA 20/100 + ATR stop, daily candles) decides which state.
+Rotations cost 0.25% each (conservative vs measured Jupiter swap costs)
+and happen a handful of times per year.
+
+Real backtest results, run 2026-06-12 on $400 (fees, slippage, rotation
+costs included; yields are conservative net estimates):
+
+| Window | Rotator | Hold SOL | Hold staked SOL | Rotator max DD | Hold max DD |
+|---|---|---|---|---|---|
+| 5 years | **$1,526 (+282%)** | $197 (−51%) | $264 (−34%) | 39.9% | 96.3% |
+| 3 years | **$1,868 (+367%)** | $1,371 (+243%) | $1,627 (+307%) | 39.9% | 76.3% |
+
+The 5-year edge comes almost entirely from sidestepping SOL's 2022
+collapse — that is the strategy's actual job. Do not extrapolate these
+CAGRs forward; a repeat of 2022 is what it protects against, not a
+promise of +30%/year.
+
+```bash
+python3 -m tradebot rotator-backtest          # reproduce the table
+python3 -m tradebot rotator-run               # paper-trade it live
+python3 -m tradebot rotator-status            # check state any time
+```
+
 ## How it works
 
 - **Strategy** (`tradebot/strategy.py`): enter long when the 20-day EMA

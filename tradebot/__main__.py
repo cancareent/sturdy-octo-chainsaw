@@ -33,6 +33,15 @@ def main(argv: list[str] | None = None) -> int:
 
     sub.add_parser("status", help="show paper account status")
 
+    p_rbt = sub.add_parser("rotator-backtest",
+                           help="backtest the staked trend rotator on SOL")
+    p_rbt.add_argument("--days", type=int, default=1825,
+                       help="history length in days (default: 5 years)")
+    p_rrun = sub.add_parser("rotator-run", help="start the rotator paper loop")
+    p_rrun.add_argument("--once", action="store_true",
+                        help="single poll cycle (for cron), then exit")
+    sub.add_parser("rotator-status", help="show rotator paper state")
+
     p_reset = sub.add_parser("reset", help="wipe paper account state")
     p_reset.add_argument("--confirm", action="store_true")
 
@@ -66,6 +75,33 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "status":
         print(Runner(cfg).status())
+        return 0
+
+    if args.command == "rotator-backtest":
+        from .rotator import fetch_rotator_history, run_rotator_backtest
+        print(DISCLAIMER)
+        print(f"Fetching {args.days} days of daily {cfg.rotator_product} candles ...")
+        candles = fetch_rotator_history(cfg, args.days)
+        print(f"  {cfg.rotator_product}: {len(candles)} candles")
+        print()
+        print(run_rotator_backtest(cfg, candles).summary())
+        return 0
+
+    if args.command == "rotator-run":
+        from .rotator import RotatorRunner
+        print(DISCLAIMER)
+        runner = RotatorRunner(cfg)
+        if args.once:
+            acted = runner.check_once()
+            print("acted on new candle" if acted else "no new closed candle")
+            print(runner.status())
+        else:
+            runner.run_forever()
+        return 0
+
+    if args.command == "rotator-status":
+        from .rotator import RotatorRunner
+        print(RotatorRunner(cfg).status())
         return 0
 
     if args.command == "reset":
