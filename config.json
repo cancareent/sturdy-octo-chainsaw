@@ -1,0 +1,19 @@
+{
+  "products": [
+    "BTC-USD",
+    "ETH-USD"
+  ],
+  "granularity": 86400,
+  "ema_fast": 20,
+  "ema_slow": 100,
+  "atr_period": 14,
+  "atr_stop_mult": 3.0,
+  "starting_cash": 1000.0,
+  "fee_rate": 0.006,
+  "slippage": 0.0005,
+  "risk_per_trade": 0.02,
+  "max_alloc_per_product": 0.45,
+  "max_drawdown_halt": 0.25,
+  "poll_seconds": 900,
+  "state_dir": "state"
+}
