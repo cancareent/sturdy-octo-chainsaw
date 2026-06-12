@@ -53,19 +53,28 @@ class Config:
     # Memecoin paper experiment. Costs are deliberately pessimistic, but
     # paper results still OVERSTATE live returns (honeypots, failed exits
     # and sandwiching cannot be simulated).
+    # SIMULATION RESOLUTION FLOOR: upstream price data is cached ~10-30s and
+    # paper fills assume the quoted price, so holds shorter than a few
+    # minutes produce fiction, not measurement. 20s polling with
+    # minutes-scale holds is as fast as this instrument can honestly go.
     meme_cash: float = 400.0
     meme_max_positions: int = 5
     meme_min_liquidity_usd: float = 100_000.0
     meme_min_volume24h_usd: float = 250_000.0
     meme_min_age_hours: float = 24.0   # skip the sniper-dominated launch window
-    meme_entry_change_h1: float = 5.0  # percent 1h momentum required to enter
-    meme_stop_loss: float = 0.15
-    meme_trail: float = 0.25
-    meme_max_hold_hours: float = 48.0
+    meme_entry_change_h1: float = 3.0  # percent 1h momentum required to enter
+    meme_entry_change_m5: float = 2.0  # percent 5-minute momentum trigger
+    meme_min_buys_m5: int = 5          # minimum 5-minute buy count (activity)
+    meme_min_buy_ratio: float = 1.5    # 5-minute buys per sell (buy pressure)
+    meme_vol_accel: float = 1.0        # m5 volume *12 must beat h1 volume * this
+    meme_stop_loss: float = 0.10
+    meme_trail: float = 0.12
+    meme_take_profit_min: float = 0.08  # profit needed to arm momentum-flip exit
+    meme_max_hold_hours: float = 4.0
     meme_rug_liquidity_drop: float = 0.7  # liquidity falls this much => rugged
     meme_cost_per_side: float = 0.01      # pool fee + price impact + tx fees
-    meme_cooldown_hours: float = 24.0
-    meme_poll_seconds: int = 120
+    meme_cooldown_hours: float = 6.0
+    meme_poll_seconds: int = 20
 
     def validate(self) -> None:
         if self.granularity not in VALID_GRANULARITIES:
@@ -102,6 +111,13 @@ class Config:
             raise ValueError("meme_rug_liquidity_drop must be in (0, 1)")
         if not (0 <= self.meme_cost_per_side < 0.1):
             raise ValueError("meme_cost_per_side must be in [0, 0.1)")
+        if self.meme_min_buy_ratio < 1 or self.meme_min_buys_m5 < 0:
+            raise ValueError("meme_min_buy_ratio must be >= 1, meme_min_buys_m5 >= 0")
+        if not (0 < self.meme_take_profit_min < 1):
+            raise ValueError("meme_take_profit_min must be in (0, 1)")
+        if self.meme_poll_seconds < 15:
+            raise ValueError("meme_poll_seconds < 15 exceeds API rate limits "
+                             "and the simulation's honest resolution")
 
     @classmethod
     def load(cls, path: str | Path = "config.json") -> "Config":

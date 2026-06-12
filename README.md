@@ -102,10 +102,19 @@ python3 -m tradebot rotator-status            # check state any time
 ## The memecoin experiment (`meme-*` commands)
 
 A measurement instrument, not a profit machine. It paper-trades trending
-Solana memecoins (GeckoTerminal data) with a disciplined momentum system —
-liquidity/volume/age filters, 1h-momentum entries, stop-loss, trailing
-stop, time stop, and a rug detector that marks positions to zero when pool
-liquidity collapses — using 1% per-side costs.
+Solana memecoins (GeckoTerminal data) on a fast tape: entries require
+liquidity/volume/age filters PLUS 5-minute momentum, 5-minute buy/sell
+pressure (1.5+ buys per sell), and accelerating volume; exits are a 10%
+stop-loss, 12% trailing stop, a momentum-flip profit take (in profit and
+the 5-minute tape turns red), a 4h time stop, and a rug detector that
+marks positions to zero when pool liquidity collapses. 1% per-side costs,
+20-second polling.
+
+**Resolution floor:** upstream price data is cached ~10-30s and paper
+fills assume the quoted price, so holds below a few minutes would be
+fiction, not measurement. This is as fast as an honest simulation goes —
+and note the cost wall: 2% round-trip means a 1-minute trade must move
++2% per minute just to break even.
 
 **Interpretation rule, agreed in advance:** paper results OVERSTATE live
 memecoin returns, because honeypots (tokens you can never sell), failed

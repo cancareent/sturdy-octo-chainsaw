@@ -16,8 +16,9 @@ def make_config(**overrides) -> Config:
 def make_pool(**overrides) -> PoolSnapshot:
     base = dict(address="Pool1111", name="DOGZ / SOL", symbol="DOGZ",
                 price_usd=0.001, liquidity_usd=200_000.0,
-                volume24h_usd=500_000.0, change_h1=8.0,
-                created_at=1_000_000)
+                volume24h_usd=500_000.0, change_h1=8.0, change_m5=3.0,
+                vol_m5_usd=5_000.0, vol_h1_usd=30_000.0,
+                buys_m5=20, sells_m5=8, created_at=1_000_000)
     base.update(overrides)
     return PoolSnapshot(**base)
 
@@ -55,6 +56,22 @@ class TestEntryFilter(unittest.TestCase):
         self.assertFalse(passes_entry(make_pool(created_at=None), self.cfg,
                                       NOW, set(), {}))
 
+    def test_rejects_weak_fast_tape(self):
+        cfg = self.cfg
+        # 5-minute momentum too low
+        self.assertFalse(passes_entry(make_pool(change_m5=0.5), cfg,
+                                      NOW, set(), {}))
+        # sellers dominate the last 5 minutes
+        self.assertFalse(passes_entry(make_pool(buys_m5=6, sells_m5=10), cfg,
+                                      NOW, set(), {}))
+        # too few buys to mean anything
+        self.assertFalse(passes_entry(make_pool(buys_m5=2, sells_m5=1), cfg,
+                                      NOW, set(), {}))
+        # volume decelerating: m5 pace (x12) below the hourly volume
+        self.assertFalse(passes_entry(make_pool(vol_m5_usd=1_000.0,
+                                                vol_h1_usd=30_000.0), cfg,
+                                      NOW, set(), {}))
+
 
 class TestExitRules(unittest.TestCase):
     def setUp(self):
@@ -81,6 +98,20 @@ class TestExitRules(unittest.TestCase):
         entry = dict(self.entry, entry_time=NOW - 49 * 3600)
         self.assertEqual(decide_exit(**entry, pool=make_pool(), now=NOW,
                                      cfg=self.cfg), "time stop")
+
+    def test_momentum_flip_takes_profit(self):
+        # Up 12% from entry and the 5-minute tape just turned red.
+        pool = make_pool(price_usd=0.00112, change_m5=-1.0)
+        entry = dict(self.entry, peak_price=0.00112)
+        self.assertEqual(decide_exit(**entry, pool=pool, now=NOW,
+                                     cfg=self.cfg), "momentum flip")
+
+    def test_momentum_flip_not_armed_below_profit_threshold(self):
+        # Tape turns red but position is only +2%: hold (no flip exit).
+        pool = make_pool(price_usd=0.00102, change_m5=-1.0)
+        entry = dict(self.entry, peak_price=0.00102)
+        self.assertIsNone(decide_exit(**entry, pool=pool, now=NOW,
+                                      cfg=self.cfg))
 
     def test_rug_on_liquidity_collapse_or_missing_pool(self):
         pool = make_pool(liquidity_usd=200_000 * 0.25)  # -75% liquidity

@@ -26,12 +26,17 @@
   "meme_min_liquidity_usd": 100000.0,
   "meme_min_volume24h_usd": 250000.0,
   "meme_min_age_hours": 24.0,
-  "meme_entry_change_h1": 5.0,
-  "meme_stop_loss": 0.15,
-  "meme_trail": 0.25,
-  "meme_max_hold_hours": 48.0,
+  "meme_entry_change_h1": 3.0,
+  "meme_entry_change_m5": 2.0,
+  "meme_min_buys_m5": 5,
+  "meme_min_buy_ratio": 1.5,
+  "meme_vol_accel": 1.0,
+  "meme_stop_loss": 0.1,
+  "meme_trail": 0.12,
+  "meme_take_profit_min": 0.08,
+  "meme_max_hold_hours": 4.0,
   "meme_rug_liquidity_drop": 0.7,
   "meme_cost_per_side": 0.01,
-  "meme_cooldown_hours": 24.0,
-  "meme_poll_seconds": 120
+  "meme_cooldown_hours": 6.0,
+  "meme_poll_seconds": 20
 }

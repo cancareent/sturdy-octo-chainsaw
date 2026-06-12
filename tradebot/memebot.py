@@ -52,6 +52,11 @@ class PoolSnapshot:
     liquidity_usd: float
     volume24h_usd: float
     change_h1: float        # percent, e.g. 7.5 means +7.5%
+    change_m5: float        # percent over the last 5 minutes
+    vol_m5_usd: float
+    vol_h1_usd: float
+    buys_m5: int
+    sells_m5: int
     created_at: int | None  # epoch seconds
 
 
@@ -65,15 +70,22 @@ def _parse_pool(item: dict) -> PoolSnapshot | None:
         if created:
             created_ts = int(datetime.fromisoformat(
                 created.replace("Z", "+00:00")).timestamp())
+        changes = attrs.get("price_change_percentage") or {}
+        volumes = attrs.get("volume_usd") or {}
+        txns_m5 = (attrs.get("transactions") or {}).get("m5") or {}
         return PoolSnapshot(
             address=attrs["address"],
             name=name,
             symbol=symbol,
             price_usd=float(attrs["base_token_price_usd"]),
             liquidity_usd=float(attrs.get("reserve_in_usd") or 0),
-            volume24h_usd=float((attrs.get("volume_usd") or {}).get("h24") or 0),
-            change_h1=float((attrs.get("price_change_percentage") or {}).get("h1")
-                            or 0),
+            volume24h_usd=float(volumes.get("h24") or 0),
+            change_h1=float(changes.get("h1") or 0),
+            change_m5=float(changes.get("m5") or 0),
+            vol_m5_usd=float(volumes.get("m5") or 0),
+            vol_h1_usd=float(volumes.get("h1") or 0),
+            buys_m5=int(txns_m5.get("buys") or 0),
+            sells_m5=int(txns_m5.get("sells") or 0),
             created_at=created_ts,
         )
     except (KeyError, TypeError, ValueError) as err:
@@ -122,6 +134,16 @@ def passes_entry(pool: PoolSnapshot, cfg: Config, now: int,
         return False  # the launch window belongs to bundle snipers; skip it
     if pool.change_h1 < cfg.meme_entry_change_h1:
         return False
+    # Fast-tape analysis: fresh 5-minute momentum, real buy pressure, and
+    # volume running ahead of its hourly pace.
+    if pool.change_m5 < cfg.meme_entry_change_m5:
+        return False
+    if pool.buys_m5 < cfg.meme_min_buys_m5:
+        return False
+    if pool.buys_m5 / max(pool.sells_m5, 1) < cfg.meme_min_buy_ratio:
+        return False
+    if pool.vol_m5_usd * 12 < cfg.meme_vol_accel * pool.vol_h1_usd:
+        return False
     return True
 
 
@@ -135,6 +157,10 @@ def decide_exit(entry_price: float, entry_liquidity: float, entry_time: int,
         return "RUG"
     if pool.price_usd <= entry_price * (1 - cfg.meme_stop_loss):
         return "stop loss"
+    # Momentum-flip profit take: in profit and the 5-minute tape turned red.
+    if (pool.price_usd >= entry_price * (1 + cfg.meme_take_profit_min)
+            and pool.change_m5 < 0):
+        return "momentum flip"
     if pool.price_usd <= peak_price * (1 - cfg.meme_trail):
         return "trailing stop"
     if now - entry_time >= cfg.meme_max_hold_hours * 3600:
